@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFPlugInFactories</key>
+	<dict>
+		<key>25EBE7ED-3E65-4ACF-8DBD-3ABABBF9C161</key>
+		<string>neuralGreenscreenMain</string>
+	</dict>
+	<key>CFPlugInTypes</key>
+	<dict>
+		<key>30010C1C-93BF-11D8-8B5B-000A95AF9C6A</key>
+		<string>25EBE7ED-3E65-4ACF-8DBD-3ABABBF9C161</string>
+	</dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright (c) 2020 John Boiles, Ryohei Ikegami, Philipp Matthes</string>
+	<key>NSPrincipalClass</key>
+	<string></string>
+</dict>
+</plist>

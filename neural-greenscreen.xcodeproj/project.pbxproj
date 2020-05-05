@@ -1,0 +1,394 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BE157A22245D71C100481624 /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE157A21245D71C100481624 /* VideoCapture.swift */; };
+		BE8832AC2454424600326232 /* CVPixelBuffer+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */; };
+		BEF5B53A2453D9CA00E7FC18 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B5392453D9CA00E7FC18 /* Main.swift */; };
+		BEF5B53D2453DFA200E7FC18 /* CoreMediaIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BEF5B53C2453DFA200E7FC18 /* CoreMediaIO.framework */; };
+		BEF5B53F2453E8F500E7FC18 /* PluginInterface.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B53E2453E8F500E7FC18 /* PluginInterface.swift */; };
+		BEF5B5412453F50000E7FC18 /* Object.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B5402453F50000E7FC18 /* Object.swift */; };
+		BEF5B5432453FE5D00E7FC18 /* Plugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B5422453FE5D00E7FC18 /* Plugin.swift */; };
+		BEF5B5452454003B00E7FC18 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B5442454003B00E7FC18 /* Log.swift */; };
+		BEF5B547245403AF00E7FC18 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B546245403AF00E7FC18 /* Device.swift */; };
+		BEF5B54A24540C0500E7FC18 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B54924540C0500E7FC18 /* Stream.swift */; };
+		BEF5B54D245417B600E7FC18 /* Property.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B54C245417B600E7FC18 /* Property.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BE143C202461C1BF0058B460 /* neural-greenscreen-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "neural-greenscreen-Bridging-Header.h"; sourceTree = "<group>"; };
+		BE157A21245D71C100481624 /* VideoCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCapture.swift; sourceTree = "<group>"; };
+		BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CVPixelBuffer+Tools.swift"; sourceTree = "<group>"; };
+		BEF5B52F2453D9B300E7FC18 /* neuralGreenscreenMain.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = neuralGreenscreenMain.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEF5B5322453D9B300E7FC18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BEF5B5392453D9CA00E7FC18 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
+		BEF5B53C2453DFA200E7FC18 /* CoreMediaIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMediaIO.framework; path = System/Library/Frameworks/CoreMediaIO.framework; sourceTree = SDKROOT; };
+		BEF5B53E2453E8F500E7FC18 /* PluginInterface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginInterface.swift; sourceTree = "<group>"; };
+		BEF5B5402453F50000E7FC18 /* Object.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Object.swift; sourceTree = "<group>"; };
+		BEF5B5422453FE5D00E7FC18 /* Plugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plugin.swift; sourceTree = "<group>"; };
+		BEF5B5442454003B00E7FC18 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		BEF5B546245403AF00E7FC18 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		BEF5B54924540C0500E7FC18 /* Stream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
+		BEF5B54C245417B600E7FC18 /* Property.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Property.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BEF5B52C2453D9B300E7FC18 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BEF5B53D2453DFA200E7FC18 /* CoreMediaIO.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BE157A26245D817400481624 /* Interface */ = {
+			isa = PBXGroup;
+			children = (
+				BE157A28245D81DC00481624 /* Capture */,
+				BE157A29245D81F200481624 /* Virtual Camera */,
+			);
+			path = Interface;
+			sourceTree = "<group>";
+		};
+		BE157A27245D81A800481624 /* Graphics */ = {
+			isa = PBXGroup;
+			children = (
+				BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */,
+			);
+			path = Graphics;
+			sourceTree = "<group>";
+		};
+		BE157A28245D81DC00481624 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				BE157A21245D71C100481624 /* VideoCapture.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		BE157A29245D81F200481624 /* Virtual Camera */ = {
+			isa = PBXGroup;
+			children = (
+				BEF5B5392453D9CA00E7FC18 /* Main.swift */,
+				BEF5B53E2453E8F500E7FC18 /* PluginInterface.swift */,
+				BEF5B5402453F50000E7FC18 /* Object.swift */,
+				BEF5B5422453FE5D00E7FC18 /* Plugin.swift */,
+				BEF5B5442454003B00E7FC18 /* Log.swift */,
+				BEF5B546245403AF00E7FC18 /* Device.swift */,
+				BEF5B54924540C0500E7FC18 /* Stream.swift */,
+				BEF5B54C245417B600E7FC18 /* Property.swift */,
+			);
+			path = "Virtual Camera";
+			sourceTree = "<group>";
+		};
+		BEF5B5262453D9B300E7FC18 = {
+			isa = PBXGroup;
+			children = (
+				BEF5B5312453D9B300E7FC18 /* neural-greenscreen */,
+				BEF5B5302453D9B300E7FC18 /* Products */,
+				BEF5B53B2453DFA200E7FC18 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		BEF5B5302453D9B300E7FC18 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BEF5B52F2453D9B300E7FC18 /* neuralGreenscreenMain.plugin */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BEF5B5312453D9B300E7FC18 /* neural-greenscreen */ = {
+			isa = PBXGroup;
+			children = (
+				BE143C202461C1BF0058B460 /* neural-greenscreen-Bridging-Header.h */,
+				BEF5B5322453D9B300E7FC18 /* Info.plist */,
+				BE157A27245D81A800481624 /* Graphics */,
+				BE157A26245D817400481624 /* Interface */,
+			);
+			path = "neural-greenscreen";
+			sourceTree = "<group>";
+		};
+		BEF5B53B2453DFA200E7FC18 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BEF5B53C2453DFA200E7FC18 /* CoreMediaIO.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BEF5B52E2453D9B300E7FC18 /* neuralGreenscreenMain */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BEF5B5352453D9B300E7FC18 /* Build configuration list for PBXNativeTarget "neuralGreenscreenMain" */;
+			buildPhases = (
+				BEF5B52B2453D9B300E7FC18 /* Sources */,
+				BEF5B52C2453D9B300E7FC18 /* Frameworks */,
+				BEF5B52D2453D9B300E7FC18 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = neuralGreenscreenMain;
+			productName = SimpleDALPlugin;
+			productReference = BEF5B52F2453D9B300E7FC18 /* neuralGreenscreenMain.plugin */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BEF5B5272453D9B300E7FC18 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1140;
+				ORGANIZATIONNAME = com.seanchas116;
+				TargetAttributes = {
+					BEF5B52E2453D9B300E7FC18 = {
+						CreatedOnToolsVersion = 11.4.1;
+						LastSwiftMigration = 1140;
+					};
+				};
+			};
+			buildConfigurationList = BEF5B52A2453D9B300E7FC18 /* Build configuration list for PBXProject "neural-greenscreen" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BEF5B5262453D9B300E7FC18;
+			productRefGroup = BEF5B5302453D9B300E7FC18 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BEF5B52E2453D9B300E7FC18 /* neuralGreenscreenMain */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BEF5B52D2453D9B300E7FC18 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BEF5B52B2453D9B300E7FC18 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BEF5B53F2453E8F500E7FC18 /* PluginInterface.swift in Sources */,
+				BEF5B5412453F50000E7FC18 /* Object.swift in Sources */,
+				BEF5B5452454003B00E7FC18 /* Log.swift in Sources */,
+				BE8832AC2454424600326232 /* CVPixelBuffer+Tools.swift in Sources */,
+				BE157A22245D71C100481624 /* VideoCapture.swift in Sources */,
+				BEF5B547245403AF00E7FC18 /* Device.swift in Sources */,
+				BEF5B5432453FE5D00E7FC18 /* Plugin.swift in Sources */,
+				BEF5B53A2453D9CA00E7FC18 /* Main.swift in Sources */,
+				BEF5B54D245417B600E7FC18 /* Property.swift in Sources */,
+				BEF5B54A24540C0500E7FC18 /* Stream.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BEF5B5332453D9B300E7FC18 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		BEF5B5342453D9B300E7FC18 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		BEF5B5362453D9B300E7FC18 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = S36925NV4E;
+				INFOPLIST_FILE = "neural-greenscreen/Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.philippmatthes.neural-greenscreen";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "neural-greenscreen/neural-greenscreen-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = plugin;
+			};
+			name = Debug;
+		};
+		BEF5B5372453D9B300E7FC18 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = S36925NV4E;
+				INFOPLIST_FILE = "neural-greenscreen/Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.philippmatthes.neural-greenscreen";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "neural-greenscreen/neural-greenscreen-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = plugin;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BEF5B52A2453D9B300E7FC18 /* Build configuration list for PBXProject "neural-greenscreen" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEF5B5332453D9B300E7FC18 /* Debug */,
+				BEF5B5342453D9B300E7FC18 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BEF5B5352453D9B300E7FC18 /* Build configuration list for PBXNativeTarget "neuralGreenscreenMain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEF5B5362453D9B300E7FC18 /* Debug */,
+				BEF5B5372453D9B300E7FC18 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BEF5B5272453D9B300E7FC18 /* Project object */;
+}

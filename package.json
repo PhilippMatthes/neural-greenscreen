@@ -1,0 +1,12 @@
+{
+    "name": "bodypix",
+    "version": "0.0.1",
+    "dependencies": {
+        "@tensorflow-models/body-pix": "^2.0.5",
+        "@tensorflow/tfjs": "^1.7.4",
+        "@tensorflow/tfjs-node": "^1.7.1"
+    },
+    "scripts": {
+        "start": "node app.js"
+    }
+}
