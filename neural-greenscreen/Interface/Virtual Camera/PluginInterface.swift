@@ -157,7 +157,15 @@ private func ObjectGetPropertyData(plugin: CMIOHardwarePlugInRef?, objectID: CMI
     return noErr
 }
 
-private func ObjectSetPropertyData(plugin: CMIOHardwarePlugInRef?, objectID: CMIOObjectID, address: UnsafePointer<CMIOObjectPropertyAddress>?, qualifiedDataSize: UInt32, qualifiedData: UnsafeRawPointer?, dataSize: UInt32, data: UnsafeRawPointer?) -> OSStatus {
+private func ObjectSetPropertyData(
+    plugin: CMIOHardwarePlugInRef?,
+    objectID: CMIOObjectID,
+    address: UnsafePointer<CMIOObjectPropertyAddress>?,
+    qualifiedDataSize: UInt32,
+    qualifiedData: UnsafeRawPointer?,
+    dataSize: UInt32,
+    data: UnsafeRawPointer?
+) -> OSStatus {
     log()
 
     guard let address = address?.pointee else {

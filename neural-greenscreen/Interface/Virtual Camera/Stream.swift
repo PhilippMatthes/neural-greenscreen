@@ -178,8 +178,8 @@ extension Stream: VideoCaptureDelegate {
             let pixelBuffer = pixelBuffer
         else {return}
         
-        // Observe only once per 2 seconds to reduce battery impact
-        if sequenceNumber % UInt64(webcamFrameRate * 2) == 0 {
+        // Observe only once per second to reduce battery impact
+        if sequenceNumber % UInt64(webcamFrameRate) == 0 {
             self.observeAsynchronously(onPixelBuffer: pixelBuffer)
         }
         

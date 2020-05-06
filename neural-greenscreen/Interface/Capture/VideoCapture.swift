@@ -52,14 +52,12 @@ public class VideoCapture: NSObject {
     var lastPresentationTimestamp = CMTime()
     
     public func setUp() {
-        captureSession.beginConfiguration()
-        
         captureSession.sessionPreset = .hd1280x720
         
         // Set up our capture session and leave no second chances
         let captureDevice = AVCaptureDevice.default(for: .video)!
         let videoInput = try! AVCaptureDeviceInput(device: captureDevice)
-        guard captureSession.canAddInput(videoInput) else {fatalError()}
+        guard captureSession.canAddInput(videoInput) else {return}
         captureSession.addInput(videoInput)
         
         // Keep in mind that the OS has to convert the camera stream
@@ -71,10 +69,8 @@ public class VideoCapture: NSObject {
         
         videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.setSampleBufferDelegate(self, queue: queue)
-        guard captureSession.canAddOutput(videoOutput) else {fatalError()}
+        guard captureSession.canAddOutput(videoOutput) else {return}
         captureSession.addOutput(videoOutput)
-        
-        captureSession.commitConfiguration()
     }
     
     public func start() {

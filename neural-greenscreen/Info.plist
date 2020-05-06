@@ -32,5 +32,7 @@
 	<string>Copyright (c) 2020 John Boiles, Ryohei Ikegami, Philipp Matthes</string>
 	<key>NSPrincipalClass</key>
 	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>Use that cam</string>
 </dict>
 </plist>
