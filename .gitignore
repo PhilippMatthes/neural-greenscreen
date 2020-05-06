@@ -1,4 +1,13 @@
 node_modules
+rootCA.srl
+rootCA.key
+rootCA.pem
+server.cert
+server.csr
+server.key
+server.crt
+
+background.jpg
 
 # Created by https://www.gitignore.io/api/xcode
 # Edit at https://www.gitignore.io/?templates=xcode

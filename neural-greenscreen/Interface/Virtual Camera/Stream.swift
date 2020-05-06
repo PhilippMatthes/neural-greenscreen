@@ -46,6 +46,10 @@ class Stream: NSObject, Object {
     private var queueAlteredProc: CMIODeviceStreamQueueAlteredProc?
     private var queueAlteredRefCon: UnsafeMutableRawPointer?
     
+    private var backgroundImage: CIImage?
+    
+    private lazy var mtlDevice = MTLCreateSystemDefaultDevice()!
+    
     private lazy var capture = VideoCapture()
 
     private lazy var formatDescription: CMVideoFormatDescription? = {
@@ -181,21 +185,25 @@ extension Stream: VideoCaptureDelegate {
         
         if let mask = mask {
             let ciImage = CIImage(cvImageBuffer: pixelBuffer)
+            var parameters = [String: Any]()
+            parameters["inputMaskImage"] = mask
+            if let backgroundImage = backgroundImage {
+                parameters["inputBackgroundImage"] = backgroundImage
+            }
             let maskedImage = ciImage.applyingFilter(
                 "CIBlendWithMask",
-                parameters: ["inputMaskImage": mask]
+                parameters: parameters
             )
-            let context = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
+            let context = CIContext(mtlDevice: mtlDevice)
             context.render(maskedImage, to: pixelBuffer)
         }
         
         self.dispatch(pixelBuffer: pixelBuffer, toStreamWithTiming: sampleTimingInfo)
     }
     
-    func byteArrayToCGImage(raw: UnsafeMutablePointer<UInt8>, // Your byte array
-                            w: Int, // your image's width
-                            h: Int // your image's height
-        ) -> CGImage! {
+    func byteArrayToCGImage(
+        raw: UnsafeMutablePointer<UInt8>, w: Int,h: Int
+    ) -> CGImage? {
 
         let bytesPerPixel: Int = 1
         let bitsPerComponent: Int = 8
@@ -206,21 +214,19 @@ extension Stream: VideoCaptureDelegate {
 
         let deviceColorSpace = CGColorSpaceCreateDeviceGray()
 
-        let image: CGImage! = CGImage.init(width: w,
-                                           height: h,
-                                           bitsPerComponent: bitsPerComponent,
-                                           bitsPerPixel: bitsPerPixel,
-                                           bytesPerRow: bytesPerRow,
-                                           space: deviceColorSpace,
-                                           bitmapInfo: [],
-                                           provider: cgDataProvider,
-                                           decode: nil,
-                                           shouldInterpolate: true,
-                                           intent: CGColorRenderingIntent.defaultIntent)
-
-
-
-        return image
+        return CGImage(
+            width: w,
+            height: h,
+            bitsPerComponent: bitsPerComponent,
+            bitsPerPixel: bitsPerPixel,
+            bytesPerRow: bytesPerRow,
+            space: deviceColorSpace,
+            bitmapInfo: [],
+            provider: cgDataProvider,
+            decode: nil,
+            shouldInterpolate: true,
+            intent: CGColorRenderingIntent.defaultIntent
+        )
     }
     
     func observeAsynchronously(onPixelBuffer pixelBuffer: CVPixelBuffer) {
@@ -232,24 +238,40 @@ extension Stream: VideoCaptureDelegate {
                 .representation(using: .jpeg, properties: [:])
         else {return}
         
-        let url = URL(string: "http://localhost:9000")!
+        URLSession.shared.dataTask(
+            with: URL(string: "https://localhost:9000/background")!,
+            completionHandler: {
+                data, response, error in
+                guard
+                    let data = data,
+                    let backgroundImage = CIImage(data: data),
+                    self.backgroundImage != backgroundImage
+                else {return}
+                self.backgroundImage = backgroundImage
+            }
+        ).resume()
+        
+        let url = URL(string: "https://localhost:9000/mask")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         
         let task = URLSession.shared.uploadTask(with: request, from: jpegData) {
             data, response, error in
-            guard error == nil, var data = data else {
+            guard
+                let response = response as? HTTPURLResponse,
+                (200...299).contains(response.statusCode),
+                error == nil,
+                let data = data
+            else {
                 return
             }
-            guard let response = response as? HTTPURLResponse,
-                (200...299).contains(response.statusCode) else {
-                print ("server error")
-                return
-            }
+            
+            // Amplify neural decision values (0...1) to a black and white byte array (0...255)
             let byteArray = [UInt8](data).map {$0 * 255}
             var amplifiedData = Data(bytes: byteArray, count: byteArray.count)
-            amplifiedData.withUnsafeMutableBytes { (bytes: UnsafeMutablePointer<UInt8>) -> Void in
+            amplifiedData.withUnsafeMutableBytes {
+                (bytes: UnsafeMutablePointer<UInt8>) -> Void in
                 let maskCGImage = self.byteArrayToCGImage(raw: bytes, w: width, h: height)!
                 let maskCIImage = CIImage(cgImage: maskCGImage)
                 self.mask = maskCIImage
