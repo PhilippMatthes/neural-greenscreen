@@ -14,6 +14,7 @@ const fs = require('fs');
         key: fs.readFileSync('server.key'),
         cert: fs.readFileSync('server.crt')
     });
+    const img = fs.readFileSync('./background.jpg');
     server.on('request', async (req, res) => {
         var request = url.parse(req.url, true);
         var action = request.pathname;
@@ -38,7 +39,6 @@ const fs = require('fs');
         }
 
         if (action === '/background') {
-            var img = fs.readFileSync('./background.jpg');
             res.writeHead(200, {'Content-Type': 'image/jpeg' });
             res.end(img, 'binary');
         }

@@ -106,6 +106,19 @@ class Stream: NSObject, Object {
     func start() {
         capture.delegate = self
         
+        URLSession.shared.dataTask(
+            with: URL(string: "https://localhost:9000/background")!,
+            completionHandler: {
+                data, response, error in
+                guard
+                    let data = data,
+                    let backgroundImage = CIImage(data: data),
+                    self.backgroundImage != backgroundImage
+                else {return}
+                self.backgroundImage = backgroundImage
+            }
+        ).resume()
+        
         capture.setUp()
         capture.start()
     }
@@ -178,8 +191,8 @@ extension Stream: VideoCaptureDelegate {
             let pixelBuffer = pixelBuffer
         else {return}
         
-        // Observe only once per second to reduce battery impact
-        if sequenceNumber % UInt64(webcamFrameRate) == 0 {
+        // Reduce battery impact
+        if sequenceNumber % UInt64(webcamFrameRate * 4) == 0 {
             self.observeAsynchronously(onPixelBuffer: pixelBuffer)
         }
         
@@ -237,19 +250,6 @@ extension Stream: VideoCaptureDelegate {
             let jpegData = NSBitmapImageRep(ciImage: ciImage)
                 .representation(using: .jpeg, properties: [:])
         else {return}
-        
-        URLSession.shared.dataTask(
-            with: URL(string: "https://localhost:9000/background")!,
-            completionHandler: {
-                data, response, error in
-                guard
-                    let data = data,
-                    let backgroundImage = CIImage(data: data),
-                    self.backgroundImage != backgroundImage
-                else {return}
-                self.backgroundImage = backgroundImage
-            }
-        ).resume()
         
         let url = URL(string: "https://localhost:9000/mask")!
         var request = URLRequest(url: url)
