@@ -40,8 +40,7 @@ class Stream: NSObject, Object {
     let webcamFrameRate = 30
     
     private var mask: CIImage?
-    private var mostRecentlyEnqueuedVNRequest: VNRequest?
-    private let dispatchSemaphore = DispatchSemaphore(value: 1)
+    private var lastDiffedCIImage: CIImage?
     private var sequenceNumber: UInt64 = 0
     private var queueAlteredProc: CMIODeviceStreamQueueAlteredProc?
     private var queueAlteredRefCon: UnsafeMutableRawPointer?
@@ -191,13 +190,31 @@ extension Stream: VideoCaptureDelegate {
             let pixelBuffer = pixelBuffer
         else {return}
         
-        // Reduce battery impact
-        if sequenceNumber % UInt64(webcamFrameRate * 4) == 0 {
-            self.observeAsynchronously(onPixelBuffer: pixelBuffer)
+        let ciImage = CIImage(cvImageBuffer: pixelBuffer)
+        
+        // Reduce the battery impact: Use a diff to see how much the
+        // stream moves. If the difference between the last diffed
+        // frame is higher than an arbitrary threshold,
+        // compute the mask more frequently.
+        //
+        // FIXME: This seems too much like a hack, but for the purpose of now, it works.
+        if let lastDiffedCIImage = lastDiffedCIImage {
+            if sequenceNumber % UInt64(webcamFrameRate) == 0 {
+                let computedDiff = diff(ciImage1: ciImage, ciImage2: lastDiffedCIImage)
+                
+                if computedDiff > 130 {
+                    self.observeAsynchronously(onPixelBuffer: pixelBuffer)
+                } else if sequenceNumber % UInt64(webcamFrameRate * 8) == 0 {
+                    self.observeAsynchronously(onPixelBuffer: pixelBuffer)
+                }
+                
+                self.lastDiffedCIImage = ciImage
+            }
+        } else {
+            self.lastDiffedCIImage = ciImage
         }
         
         if let mask = mask {
-            let ciImage = CIImage(cvImageBuffer: pixelBuffer)
             var parameters = [String: Any]()
             parameters["inputMaskImage"] = mask
             if let backgroundImage = backgroundImage {
@@ -215,7 +232,7 @@ extension Stream: VideoCaptureDelegate {
     }
     
     func byteArrayToCGImage(
-        raw: UnsafeMutablePointer<UInt8>, w: Int,h: Int
+        raw: UnsafePointer<UInt8>, w: Int,h: Int
     ) -> CGImage? {
 
         let bytesPerPixel: Int = 1
@@ -240,6 +257,60 @@ extension Stream: VideoCaptureDelegate {
             shouldInterpolate: true,
             intent: CGColorRenderingIntent.defaultIntent
         )
+    }
+    
+    func diff(ciImage1: CIImage, ciImage2: CIImage) -> Int {
+        // Create the difference blend mode filter and set its properties.
+        let diffFilter = CIFilter(name: "CIDifferenceBlendMode")!
+        diffFilter.setDefaults()
+        diffFilter.setValue(ciImage1, forKey: kCIInputImageKey)
+        diffFilter.setValue(ciImage2, forKey: kCIInputBackgroundImageKey)
+        
+        // Create the area max filter and set its properties.
+        let areaMaxFilter = CIFilter(name: "CIAreaMaximum")!
+        areaMaxFilter.setDefaults()
+        areaMaxFilter.setValue(diffFilter.value(forKey: kCIOutputImageKey),
+            forKey: kCIInputImageKey)
+        let compareRect = CGRect(x: 0.0, y: 0.0, width: 1280, height: 720)
+        let extents = CIVector(cgRect: compareRect)
+        areaMaxFilter.setValue(extents, forKey: kCIInputExtentKey)
+
+        // The filters have been setup, now set up the CGContext bitmap context the
+        // output is drawn to. Setup the context with our supplied buffer.
+        let alphaInfo = CGImageAlphaInfo.premultipliedLast
+        let bitmapInfo = CGBitmapInfo(rawValue: alphaInfo.rawValue)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        var buf: [CUnsignedChar] = Array<CUnsignedChar>(repeating: 255, count: 16)
+        let context = CGContext(
+            data: &buf,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 16,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        )!
+        
+        // Now create the core image context CIContext from the bitmap context.
+        let ciContextOpts: [CIContextOption : Any] = [
+            CIContextOption.workingColorSpace : colorSpace,
+            CIContextOption.useSoftwareRenderer : false
+        ]
+        let ciContext = CIContext(cgContext: context, options: ciContextOpts)
+        
+        // Get the output CIImage and draw that to the Core Image context.
+        let valueImage = areaMaxFilter.value(forKey: kCIOutputImageKey)! as! CIImage
+        ciContext.draw(
+            valueImage,
+            in: CGRect(x: 0, y: 0, width: 1,height: 1),
+            from: valueImage.extent
+        )
+        
+        // This will have modified the contents of the buffer used for the CGContext.
+        // Find the maximum value of the different color components. Remember that
+        // the CGContext was created with a Premultiplied last meaning that alpha
+        // is the fourth component with red, green and blue in the first three.
+        return Int(max(buf[0], max(buf[1], buf[2])))
     }
     
     func observeAsynchronously(onPixelBuffer pixelBuffer: CVPixelBuffer) {
@@ -269,13 +340,10 @@ extension Stream: VideoCaptureDelegate {
             
             // Amplify neural decision values (0...1) to a black and white byte array (0...255)
             let byteArray = [UInt8](data).map {$0 * 255}
-            var amplifiedData = Data(bytes: byteArray, count: byteArray.count)
-            amplifiedData.withUnsafeMutableBytes {
-                (bytes: UnsafeMutablePointer<UInt8>) -> Void in
-                let maskCGImage = self.byteArrayToCGImage(raw: bytes, w: width, h: height)!
-                let maskCIImage = CIImage(cgImage: maskCGImage)
-                self.mask = maskCIImage
-            }
+            let maskCGImage = self.byteArrayToCGImage(raw: byteArray, w: width, h: height)!
+            let maskCIImage = CIImage(cgImage: maskCGImage).applyingGaussianBlur(sigma: 2)
+            
+            self.mask = maskCIImage
         }
         task.resume()
     }
