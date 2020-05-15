@@ -202,7 +202,7 @@ extension Stream: VideoCaptureDelegate {
             if sequenceNumber % UInt64(webcamFrameRate) == 0 {
                 let computedDiff = diff(ciImage1: ciImage, ciImage2: lastDiffedCIImage)
                 
-                if computedDiff > 130 {
+                if computedDiff == 255 {
                     self.observeAsynchronously(onPixelBuffer: pixelBuffer)
                 } else if sequenceNumber % UInt64(webcamFrameRate * 8) == 0 {
                     self.observeAsynchronously(onPixelBuffer: pixelBuffer)
