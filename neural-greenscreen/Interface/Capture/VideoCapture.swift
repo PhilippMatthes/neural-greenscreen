@@ -24,7 +24,7 @@
 
 import AVFoundation
 
-public protocol VideoCaptureDelegate: class {
+public protocol VideoCaptureDelegate: AnyObject {
     func videoCapture(
         _ capture: VideoCapture,
         didCapture pixelBuffer: CVPixelBuffer?,

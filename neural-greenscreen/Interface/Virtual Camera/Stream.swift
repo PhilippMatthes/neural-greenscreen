@@ -38,15 +38,14 @@ class Stream: NSObject, Object {
     let width = 1280
     let height = 720
     let webcamFrameRate = 30
+
+    let greenscreen = NeuralGreenscreen()
+    var currentGreenscreenBuffer: CVPixelBuffer?
     
-    private var mask: CIImage?
-    private var lastDiffedCIImage: CIImage?
     private var sequenceNumber: UInt64 = 0
     private var queueAlteredProc: CMIODeviceStreamQueueAlteredProc?
     private var queueAlteredRefCon: UnsafeMutableRawPointer?
-    
-    private var backgroundImage: CIImage?
-    
+
     private lazy var mtlDevice = MTLCreateSystemDefaultDevice()!
     
     private lazy var capture = VideoCapture()
@@ -104,22 +103,11 @@ class Stream: NSObject, Object {
 
     func start() {
         capture.delegate = self
-        
-        URLSession.shared.dataTask(
-            with: URL(string: "https://localhost:9000/background")!,
-            completionHandler: {
-                data, response, error in
-                guard
-                    let data = data,
-                    let backgroundImage = CIImage(data: data),
-                    self.backgroundImage != backgroundImage
-                else {return}
-                self.backgroundImage = backgroundImage
-            }
-        ).resume()
-        
         capture.setUp()
         capture.start()
+
+        // Entrypoint to perform any other startup operations.
+        greenscreen.delegate = self
     }
 
     func stop() {
@@ -189,162 +177,35 @@ extension Stream: VideoCaptureDelegate {
         guard
             let pixelBuffer = pixelBuffer
         else {return}
-        
-        let ciImage = CIImage(cvImageBuffer: pixelBuffer)
-        
-        // Reduce the battery impact: Use a diff to see how much the
-        // stream moves. If the difference between the last diffed
-        // frame is higher than an arbitrary threshold,
-        // compute the mask more frequently.
-        //
-        // FIXME: This seems too much like a hack, but for the purpose of now, it works.
-        if let lastDiffedCIImage = lastDiffedCIImage {
-            if sequenceNumber % UInt64(webcamFrameRate) == 0 {
-                let computedDiff = diff(ciImage1: ciImage, ciImage2: lastDiffedCIImage)
-                
-                if computedDiff == 255 {
-                    self.observeAsynchronously(onPixelBuffer: pixelBuffer)
-                } else if sequenceNumber % UInt64(webcamFrameRate * 8) == 0 {
-                    self.observeAsynchronously(onPixelBuffer: pixelBuffer)
+
+        // Remove the background
+        DispatchQueue.global(qos: .background).async {
+            if self.sequenceNumber % 10 == 0 {
+                do {
+                    try self.greenscreen.replaceBackground(onPixelBuffer: pixelBuffer)
+                } catch {
+                    log(error)
                 }
-                
-                self.lastDiffedCIImage = ciImage
             }
-        } else {
-            self.lastDiffedCIImage = ciImage
         }
-        
-        if let mask = mask {
-            var parameters = [String: Any]()
-            parameters["inputMaskImage"] = mask
-            if let backgroundImage = backgroundImage {
-                parameters["inputBackgroundImage"] = backgroundImage
-            }
-            let maskedImage = ciImage.applyingFilter(
-                "CIBlendWithMask",
-                parameters: parameters
+
+        if let greenscreenBuffer = currentGreenscreenBuffer {
+            self.dispatch(
+                pixelBuffer: greenscreenBuffer,
+                toStreamWithTiming: sampleTimingInfo
             )
-            let context = CIContext(mtlDevice: mtlDevice)
-            context.render(maskedImage, to: pixelBuffer)
+        } else {
+            self.dispatch(
+                pixelBuffer: pixelBuffer,
+                toStreamWithTiming: sampleTimingInfo
+            )
         }
-        
-        self.dispatch(pixelBuffer: pixelBuffer, toStreamWithTiming: sampleTimingInfo)
     }
-    
-    func byteArrayToCGImage(
-        raw: UnsafePointer<UInt8>, w: Int,h: Int
-    ) -> CGImage? {
+}
 
-        let bytesPerPixel: Int = 1
-        let bitsPerComponent: Int = 8
-        let bitsPerPixel = bytesPerPixel * bitsPerComponent;
-        let bytesPerRow: Int = w * bytesPerPixel;
-        let cfData = CFDataCreate(nil, raw, w * h * bytesPerPixel)
-        let cgDataProvider = CGDataProvider.init(data: cfData!)!
-
-        let deviceColorSpace = CGColorSpaceCreateDeviceGray()
-
-        return CGImage(
-            width: w,
-            height: h,
-            bitsPerComponent: bitsPerComponent,
-            bitsPerPixel: bitsPerPixel,
-            bytesPerRow: bytesPerRow,
-            space: deviceColorSpace,
-            bitmapInfo: [],
-            provider: cgDataProvider,
-            decode: nil,
-            shouldInterpolate: true,
-            intent: CGColorRenderingIntent.defaultIntent
-        )
-    }
-    
-    func diff(ciImage1: CIImage, ciImage2: CIImage) -> Int {
-        // Create the difference blend mode filter and set its properties.
-        let diffFilter = CIFilter(name: "CIDifferenceBlendMode")!
-        diffFilter.setDefaults()
-        diffFilter.setValue(ciImage1, forKey: kCIInputImageKey)
-        diffFilter.setValue(ciImage2, forKey: kCIInputBackgroundImageKey)
-        
-        // Create the area max filter and set its properties.
-        let areaMaxFilter = CIFilter(name: "CIAreaMaximum")!
-        areaMaxFilter.setDefaults()
-        areaMaxFilter.setValue(diffFilter.value(forKey: kCIOutputImageKey),
-            forKey: kCIInputImageKey)
-        let compareRect = CGRect(x: 0.0, y: 0.0, width: 1280, height: 720)
-        let extents = CIVector(cgRect: compareRect)
-        areaMaxFilter.setValue(extents, forKey: kCIInputExtentKey)
-
-        // The filters have been setup, now set up the CGContext bitmap context the
-        // output is drawn to. Setup the context with our supplied buffer.
-        let alphaInfo = CGImageAlphaInfo.premultipliedLast
-        let bitmapInfo = CGBitmapInfo(rawValue: alphaInfo.rawValue)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        var buf: [CUnsignedChar] = Array<CUnsignedChar>(repeating: 255, count: 16)
-        let context = CGContext(
-            data: &buf,
-            width: 1,
-            height: 1,
-            bitsPerComponent: 8,
-            bytesPerRow: 16,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
-        )!
-        
-        // Now create the core image context CIContext from the bitmap context.
-        let ciContextOpts: [CIContextOption : Any] = [
-            CIContextOption.workingColorSpace : colorSpace,
-            CIContextOption.useSoftwareRenderer : false
-        ]
-        let ciContext = CIContext(cgContext: context, options: ciContextOpts)
-        
-        // Get the output CIImage and draw that to the Core Image context.
-        let valueImage = areaMaxFilter.value(forKey: kCIOutputImageKey)! as! CIImage
-        ciContext.draw(
-            valueImage,
-            in: CGRect(x: 0, y: 0, width: 1,height: 1),
-            from: valueImage.extent
-        )
-        
-        // This will have modified the contents of the buffer used for the CGContext.
-        // Find the maximum value of the different color components. Remember that
-        // the CGContext was created with a Premultiplied last meaning that alpha
-        // is the fourth component with red, green and blue in the first three.
-        return Int(max(buf[0], max(buf[1], buf[2])))
-    }
-    
-    func observeAsynchronously(onPixelBuffer pixelBuffer: CVPixelBuffer) {
-        let ciImage = CIImage(cvImageBuffer: pixelBuffer)
-        let width = CVPixelBufferGetWidth(pixelBuffer)
-        let height = CVPixelBufferGetHeight(pixelBuffer)
-        guard
-            let jpegData = NSBitmapImageRep(ciImage: ciImage)
-                .representation(using: .jpeg, properties: [:])
-        else {return}
-        
-        let url = URL(string: "https://localhost:9000/mask")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        
-        let task = URLSession.shared.uploadTask(with: request, from: jpegData) {
-            data, response, error in
-            guard
-                let response = response as? HTTPURLResponse,
-                (200...299).contains(response.statusCode),
-                error == nil,
-                let data = data
-            else {
-                return
-            }
-            
-            // Amplify neural decision values (0...1) to a black and white byte array (0...255)
-            let byteArray = [UInt8](data).map {$0 * 255}
-            let maskCGImage = self.byteArrayToCGImage(raw: byteArray, w: width, h: height)!
-            let maskCIImage = CIImage(cgImage: maskCGImage).applyingGaussianBlur(sigma: 2)
-            
-            self.mask = maskCIImage
-        }
-        task.resume()
+extension Stream: NeuralGreenscreenDelegate {
+    func didReplaceBackground(onProcessedPixelBuffer pixelBuffer: CVPixelBuffer) {
+        log("Received processed buffer")
+        self.currentGreenscreenBuffer = pixelBuffer
     }
 }
