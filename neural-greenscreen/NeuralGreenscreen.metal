@@ -23,44 +23,38 @@
 
 #include <metal_stdlib>
 using namespace metal;
-#include <CoreImage/CoreImage.h>
-
-struct MaskParams {
-    int segmentationWidth;
-    int segmentationHeight;
-};
 
 kernel void mask(
+    texture2d<float, access::read> inputTexture [[texture(0)]],
     texture2d<float, access::write> outputTexture [[texture(1)]],
     device int* segmentationMask [[buffer(0)]],
-    constant MaskParams& params [[buffer(1)]],
-    uint2 gid [[thread_position_in_grid]])
-{
+    uint2 gid [[thread_position_in_grid]]
+) {
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
-    outputTexture.write(float4(1.0, 1.0, 0.0, 1.0), gid);
-    return;
 
-    /*
+    const int segmentationWidth = 513;
+    const int segmentationHeight = 513;
+
     float width = outputTexture.get_width();
     float height = outputTexture.get_height();
 
     const float2 pos = float2(float(gid.x) / width, float(gid.y) / height);
 
-    const int x = int(pos.x * params.segmentationWidth);
-    const int y = int(pos.y * params.segmentationHeight);
-    const int label = segmentationMask[y * params.segmentationWidth + x];
+    const int x = int(pos.x * segmentationWidth);
+    const int y = int(pos.y * segmentationHeight);
+    const int label = segmentationMask[y * segmentationWidth + x];
     const bool isPerson = label == 15;
 
     float4 outPixel;
+    float4 originalColor = inputTexture.read(gid);
 
     if (isPerson) {
-        outPixel = float4(1.0, 1.0, 1.0, 1.0);
+        outPixel = originalColor;
     } else {
         outPixel = float4(0.0, 0.0, 0.0, 1.0);
     }
 
     outputTexture.write(outPixel, gid);
-     */
 }

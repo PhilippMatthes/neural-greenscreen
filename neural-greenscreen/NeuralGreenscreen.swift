@@ -32,18 +32,25 @@ protocol NeuralGreenscreenDelegate {
 final class NeuralGreenscreen {
     var delegate: NeuralGreenscreenDelegate?
 
-    private let model = DeepLabV3()
-    private let context1 = CIContext()
-    private let context2 = CIContext()
-    private let device = MTLCreateSystemDefaultDevice()!
+    private let webcamSize: CGSize = .init(width: 1280, height: 720)
+    private let segmentationSize: CGSize = .init(width: 513, height: 513)
 
-    private struct MaskParams {
+    private let model: DeepLabV3
+
+    private let context = CIContext()
+
+    private let device: MTLDevice
+    private var inputTextureCache: CVMetalTextureCache
+    private let commandQueue: MTLCommandQueue
+    private let computePipelineState: MTLComputePipelineState
+
+    private struct MaskShaderParams {
         var width: Int32
         var height: Int32
 
-        init(_ segmentationMap: MLMultiArray) {
-            self.width = Int32(truncating: segmentationMap.shape[0])
-            self.height = Int32(truncating: segmentationMap.shape[1])
+        init(segmentationSize: CGSize) {
+            self.width = Int32(segmentationSize.width)
+            self.height = Int32(segmentationSize.height)
         }
 
         var neededBufferLength: Int {
@@ -51,12 +58,39 @@ final class NeuralGreenscreen {
         }
     }
 
-    func replaceBackground(onPixelBuffer pixelBuffer: CVPixelBuffer) throws {
-        log("Performing inference")
+    init() {
+        let modelConfig = MLModelConfiguration()
+        let bundle = Bundle(for: Self.self)
+        var inputTextureCache: CVMetalTextureCache?
 
-        let unresizedRawInput = CIImage(cvPixelBuffer: pixelBuffer)
-        let resizedRawInput = unresizedRawInput
-            .transformed(by: CGAffineTransform(scaleX: 513 / 1280, y: 513 / 720))
+        guard
+            let model = try? DeepLabV3(configuration: modelConfig),
+            let device = MTLCreateSystemDefaultDevice(),
+            let commandQueue = device.makeCommandQueue(),
+            let library = try? device.makeDefaultLibrary(bundle: bundle),
+            let function = library.makeFunction(name: "mask"),
+            let computePipelineState = try? device
+                .makeComputePipelineState(function: function),
+            CVMetalTextureCacheCreate(
+                kCFAllocatorDefault, nil, device, nil, &inputTextureCache
+            ) == kCVReturnSuccess,
+            let inputTextureCache = inputTextureCache
+        else { fatalError("Neural Greenscreen initialization failed") }
+
+        self.model = model
+        self.device = device
+        self.inputTextureCache = inputTextureCache
+        self.commandQueue = commandQueue
+        self.computePipelineState = computePipelineState
+    }
+
+    private func createModelInput(_ cameraPixelBuffer: CVPixelBuffer) -> CVPixelBuffer {
+        let unresizedRawInput = CIImage(cvPixelBuffer: cameraPixelBuffer)
+        let transform = CGAffineTransform(
+            scaleX: segmentationSize.width / webcamSize.width,
+            y: segmentationSize.height / webcamSize.height
+        )
+        let resizedRawInput = unresizedRawInput.transformed(by: transform)
         var inputPixelBuffer: CVPixelBuffer?
         let attrs = [
             kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue,
@@ -64,25 +98,63 @@ final class NeuralGreenscreen {
         ] as CFDictionary
         CVPixelBufferCreate(
             kCFAllocatorDefault,
-            513,
-            513,
+            Int(segmentationSize.width),
+            Int(segmentationSize.height),
             kCVPixelFormatType_32BGRA,
             attrs,
             &inputPixelBuffer
         )
+        guard
+            let inputPixelBuffer = inputPixelBuffer
+        else { fatalError("Could not create new input pixel buffer") }
+        context.render(resizedRawInput, to: inputPixelBuffer)
+        return inputPixelBuffer
+    }
 
-        context1.render(resizedRawInput, to: inputPixelBuffer!)
+    private func createTextures(
+        webcamPixelBuffer: CVPixelBuffer
+    ) -> (MTLTexture, MTLTexture) {
+        // TODO: Cache textures and load background, see https://github.com/gsurma/metal_camera/blob/master/MetalCamera-iOS/MetalCamera/Main/MetalView/MetalView.swift
 
-        let output = try model.prediction(input: .init(image: inputPixelBuffer!))
-        let segmentationMap = output.semanticPredictions
+        var inputCVTexture: CVMetalTexture?
+        CVMetalTextureCacheCreateTextureFromImage(
+            kCFAllocatorDefault,
+            inputTextureCache,
+            webcamPixelBuffer,
+            nil,
+            .bgra8Unorm,
+            Int(webcamSize.width),
+            Int(webcamSize.height),
+            0,
+            &inputCVTexture
+        )
+        guard
+            let inputCVTexture = inputCVTexture,
+            let inputTexture = CVMetalTextureGetTexture(inputCVTexture)
+        else { fatalError("Failed to create input Metal texture") }
 
-        log(segmentationMap)
+        let outputTextureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: Int(webcamSize.width),
+            height: Int(webcamSize.height),
+            mipmapped: false
+        )
+        outputTextureDescriptor.usage = [.shaderWrite]
 
-        var maskParams = MaskParams(segmentationMap)
+        guard
+            let outputTexture = device.makeTexture(descriptor: outputTextureDescriptor)
+        else { fatalError("Failed to create output Metal texture") }
+
+        return (inputTexture, outputTexture)
+    }
+
+    private func createMaskBuffer(modelOutput: DeepLabV3Output) -> (MTLBuffer) {
+        let segmentationMap = modelOutput.semanticPredictions
+        let maskParams = MaskShaderParams(segmentationSize: segmentationSize)
 
         guard let segmentationMaskBuffer = device.makeBuffer(
             length: maskParams.neededBufferLength
-        ) else { return }
+        ) else { fatalError("Failed to create mask buffer") }
 
         memcpy(
             segmentationMaskBuffer.contents(),
@@ -90,47 +162,24 @@ final class NeuralGreenscreen {
             segmentationMaskBuffer.length
         )
 
-        let commandQueue = device.makeCommandQueue()!
-        let bundle = Bundle(for: Self.self)
-        let library = try device.makeDefaultLibrary(bundle: bundle)
-        let function = library.makeFunction(name: "mask")!
-        let computePipeline = try device.makeComputePipelineState(function: function)
-        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
-            width: 1280,
-            height: 720,
-            mipmapped: false
-        )
-        textureDescriptor.usage = [.shaderRead, .shaderWrite]
-        let outputTexture = device.makeTexture(descriptor: textureDescriptor)!
+        return segmentationMaskBuffer
+    }
 
-        let buffer = commandQueue.makeCommandBuffer()!
-        let maskCommandEncoder = buffer.makeComputeCommandEncoder()!
-        maskCommandEncoder.setTexture(outputTexture, index: 1)
-        maskCommandEncoder.setBuffer(segmentationMaskBuffer, offset: 0, index: 0)
-        maskCommandEncoder.setBytes(
-            &maskParams, length: MemoryLayout<MaskParams>.size, index: 1
-        )
-        let w = computePipeline.threadExecutionWidth
-        let h = computePipeline.maxTotalThreadsPerThreadgroup / w
-        let threadGroupSize = MTLSizeMake(w, h, 1)
-        let threadGroups = MTLSizeMake(
-            (outputTexture.width + w - 1) / w,
-            (outputTexture.height + h - 1) / h,
-            1
-        )
-        maskCommandEncoder.setComputePipelineState(computePipeline)
-        maskCommandEncoder.dispatchThreadgroups(
-            threadGroups, threadsPerThreadgroup: threadGroupSize
-        )
-        maskCommandEncoder.endEncoding()
-
+    private func renderTexture(outputTexture: MTLTexture) -> CVPixelBuffer {
         let kciOptions: [CIImageOption: Any] = [
             CIImageOption.colorSpace: CGColorSpaceCreateDeviceRGB()
         ]
-        let maskImage = CIImage(mtlTexture: outputTexture, options: kciOptions)!
-            .oriented(.downMirrored)
 
+        guard let maskImage = CIImage(
+            mtlTexture: outputTexture, options: kciOptions
+        )?.oriented(.downMirrored) else {
+            fatalError("Failed to render output texture")
+        }
+
+        let attrs = [
+            kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue,
+            kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue
+        ] as CFDictionary
         var outputPixelBuffer: CVPixelBuffer?
         CVPixelBufferCreate(
             kCFAllocatorDefault,
@@ -140,10 +189,50 @@ final class NeuralGreenscreen {
             attrs,
             &outputPixelBuffer
         )
+        guard
+            let outputPixelBuffer = outputPixelBuffer
+        else { fatalError("Could not create new output pixel buffer") }
+        context.render(maskImage, to: outputPixelBuffer)
 
-        context2.render(maskImage, to: outputPixelBuffer!)
+        return outputPixelBuffer
+    }
 
-        delegate?.didReplaceBackground(onProcessedPixelBuffer: outputPixelBuffer!)
+    private func dispatchThreadGroups(
+        size: CGSize, commandEncoder: MTLComputeCommandEncoder
+    ) {
+        let counts = MTLSizeMake(8, 8, 1)
+        let groups = MTLSize(
+            width: (Int(size.width) + counts.width - 1) / counts.width,
+            height: (Int(size.height) + counts.height - 1) / counts.height,
+            depth: 1
+        )
+        commandEncoder.dispatchThreadgroups(groups, threadsPerThreadgroup: counts)
+    }
+
+    func replaceBackground(onPixelBuffer pixelBuffer: CVPixelBuffer) throws {
+        log("Performing inference")
+
+        let modelInput = createModelInput(pixelBuffer)
+        let modelOutput = try model.prediction(input: .init(image: modelInput))
+        let (inputTexture, outputTexture) = createTextures(webcamPixelBuffer: pixelBuffer)
+        let maskBuffer = createMaskBuffer(modelOutput: modelOutput)
+
+        guard
+            let commandBuffer = commandQueue.makeCommandBuffer(),
+            let commandEncoder = commandBuffer.makeComputeCommandEncoder()
+        else { fatalError("Failed to create Metal command buffer or encoder") }
+
+        commandEncoder.setComputePipelineState(computePipelineState)
+        commandEncoder.setTexture(inputTexture, index: 0)
+        commandEncoder.setTexture(outputTexture, index: 1)
+        commandEncoder.setBuffer(maskBuffer, offset: 0, index: 0)
+        dispatchThreadGroups(size: webcamSize, commandEncoder: commandEncoder)
+        commandEncoder.endEncoding()
+        commandBuffer.commit()
+
+        let outputPixelBuffer = renderTexture(outputTexture: outputTexture)
+
+        delegate?.didReplaceBackground(onProcessedPixelBuffer: outputPixelBuffer)
     }
 }
 
