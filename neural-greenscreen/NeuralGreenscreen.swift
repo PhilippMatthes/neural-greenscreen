@@ -25,22 +25,27 @@ import Foundation
 import CoreImage
 import CoreML
 
-protocol NeuralGreenscreenDelegate {
-    func didReplaceBackground(onProcessedPixelBuffer pixelBuffer: CVPixelBuffer)
-}
-
 final class NeuralGreenscreen {
-    var delegate: NeuralGreenscreenDelegate?
+    lazy var background: CIImage = {
+        guard
+            let url = Bundle(for: Self.self)
+                .url(forResource: "background", withExtension: "png"),
+            let data = try? Data(contentsOf: url),
+            let image = CIImage(data: data)
+        else { fatalError("Background image could not be loaded") }
+        return image
+    }()
+
+    private var isBusy = false
 
     private let webcamSize: CGSize = .init(width: 1280, height: 720)
     private let segmentationSize: CGSize = .init(width: 513, height: 513)
 
-    private let model: DeepLabV3
+    private let model: DeepLabV3Int8LUT
 
     private let context = CIContext()
 
     private let device: MTLDevice
-    private var inputTextureCache: CVMetalTextureCache
     private let commandQueue: MTLCommandQueue
     private let computePipelineState: MTLComputePipelineState
 
@@ -60,26 +65,21 @@ final class NeuralGreenscreen {
 
     init() {
         let modelConfig = MLModelConfiguration()
+        modelConfig.computeUnits = .cpuOnly
         let bundle = Bundle(for: Self.self)
-        var inputTextureCache: CVMetalTextureCache?
 
         guard
-            let model = try? DeepLabV3(configuration: modelConfig),
+            let model = try? DeepLabV3Int8LUT(configuration: modelConfig),
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue(),
             let library = try? device.makeDefaultLibrary(bundle: bundle),
             let function = library.makeFunction(name: "mask"),
             let computePipelineState = try? device
-                .makeComputePipelineState(function: function),
-            CVMetalTextureCacheCreate(
-                kCFAllocatorDefault, nil, device, nil, &inputTextureCache
-            ) == kCVReturnSuccess,
-            let inputTextureCache = inputTextureCache
+                .makeComputePipelineState(function: function)
         else { fatalError("Neural Greenscreen initialization failed") }
 
         self.model = model
         self.device = device
-        self.inputTextureCache = inputTextureCache
         self.commandQueue = commandQueue
         self.computePipelineState = computePipelineState
     }
@@ -111,28 +111,7 @@ final class NeuralGreenscreen {
         return inputPixelBuffer
     }
 
-    private func createTextures(
-        webcamPixelBuffer: CVPixelBuffer
-    ) -> (MTLTexture, MTLTexture) {
-        // TODO: Cache textures and load background, see https://github.com/gsurma/metal_camera/blob/master/MetalCamera-iOS/MetalCamera/Main/MetalView/MetalView.swift
-
-        var inputCVTexture: CVMetalTexture?
-        CVMetalTextureCacheCreateTextureFromImage(
-            kCFAllocatorDefault,
-            inputTextureCache,
-            webcamPixelBuffer,
-            nil,
-            .bgra8Unorm,
-            Int(webcamSize.width),
-            Int(webcamSize.height),
-            0,
-            &inputCVTexture
-        )
-        guard
-            let inputCVTexture = inputCVTexture,
-            let inputTexture = CVMetalTextureGetTexture(inputCVTexture)
-        else { fatalError("Failed to create input Metal texture") }
-
+    private func createTextures() -> MTLTexture {
         let outputTextureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
             width: Int(webcamSize.width),
@@ -145,10 +124,10 @@ final class NeuralGreenscreen {
             let outputTexture = device.makeTexture(descriptor: outputTextureDescriptor)
         else { fatalError("Failed to create output Metal texture") }
 
-        return (inputTexture, outputTexture)
+        return outputTexture
     }
 
-    private func createMaskBuffer(modelOutput: DeepLabV3Output) -> (MTLBuffer) {
+    private func createMaskBuffer(modelOutput: DeepLabV3Int8LUTOutput) -> (MTLBuffer) {
         let segmentationMap = modelOutput.semanticPredictions
         let maskParams = MaskShaderParams(segmentationSize: segmentationSize)
 
@@ -200,7 +179,7 @@ final class NeuralGreenscreen {
     private func dispatchThreadGroups(
         size: CGSize, commandEncoder: MTLComputeCommandEncoder
     ) {
-        let counts = MTLSizeMake(8, 8, 1)
+        let counts = MTLSizeMake(16, 16, 1)
         let groups = MTLSize(
             width: (Int(size.width) + counts.width - 1) / counts.width,
             height: (Int(size.height) + counts.height - 1) / counts.height,
@@ -209,12 +188,13 @@ final class NeuralGreenscreen {
         commandEncoder.dispatchThreadgroups(groups, threadsPerThreadgroup: counts)
     }
 
-    func replaceBackground(onPixelBuffer pixelBuffer: CVPixelBuffer) throws {
-        log("Performing inference")
+    func mask(webcamPixelBuffer: CVPixelBuffer) throws -> CVPixelBuffer? {
+        guard !isBusy else { return nil }
+        isBusy = true
 
-        let modelInput = createModelInput(pixelBuffer)
+        let modelInput = createModelInput(webcamPixelBuffer)
         let modelOutput = try model.prediction(input: .init(image: modelInput))
-        let (inputTexture, outputTexture) = createTextures(webcamPixelBuffer: pixelBuffer)
+        let outputTexture = createTextures()
         let maskBuffer = createMaskBuffer(modelOutput: modelOutput)
 
         guard
@@ -223,16 +203,16 @@ final class NeuralGreenscreen {
         else { fatalError("Failed to create Metal command buffer or encoder") }
 
         commandEncoder.setComputePipelineState(computePipelineState)
-        commandEncoder.setTexture(inputTexture, index: 0)
-        commandEncoder.setTexture(outputTexture, index: 1)
+        commandEncoder.setTexture(outputTexture, index: 0)
         commandEncoder.setBuffer(maskBuffer, offset: 0, index: 0)
         dispatchThreadGroups(size: webcamSize, commandEncoder: commandEncoder)
         commandEncoder.endEncoding()
         commandBuffer.commit()
 
-        let outputPixelBuffer = renderTexture(outputTexture: outputTexture)
+        let renderedBuffer = renderTexture(outputTexture: outputTexture)
+        isBusy = false
 
-        delegate?.didReplaceBackground(onProcessedPixelBuffer: outputPixelBuffer)
+        return renderedBuffer
     }
 }
 

@@ -25,8 +25,7 @@
 using namespace metal;
 
 kernel void mask(
-    texture2d<float, access::read> inputTexture [[texture(0)]],
-    texture2d<float, access::write> outputTexture [[texture(1)]],
+    texture2d<float, access::write> outputTexture [[texture(0)]],
     device int* segmentationMask [[buffer(0)]],
     uint2 gid [[thread_position_in_grid]]
 ) {
@@ -48,10 +47,9 @@ kernel void mask(
     const bool isPerson = label == 15;
 
     float4 outPixel;
-    float4 originalColor = inputTexture.read(gid);
 
     if (isPerson) {
-        outPixel = originalColor;
+        outPixel = float4(1.0, 1.0, 1.0, 1.0);
     } else {
         outPixel = float4(0.0, 0.0, 0.0, 1.0);
     }

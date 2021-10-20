@@ -39,8 +39,9 @@ class Stream: NSObject, Object {
     let height = 720
     let webcamFrameRate = 30
 
+    let context = CIContext()
     let greenscreen = NeuralGreenscreen()
-    var currentGreenscreenBuffer: CVPixelBuffer?
+    var currentMask: CVPixelBuffer?
     
     private var sequenceNumber: UInt64 = 0
     private var queueAlteredProc: CMIODeviceStreamQueueAlteredProc?
@@ -105,9 +106,6 @@ class Stream: NSObject, Object {
         capture.delegate = self
         capture.setUp()
         capture.start()
-
-        // Entrypoint to perform any other startup operations.
-        greenscreen.delegate = self
     }
 
     func stop() {
@@ -174,38 +172,47 @@ extension Stream: VideoCaptureDelegate {
         didCapture pixelBuffer: CVPixelBuffer?,
         with sampleTimingInfo: CMSampleTimingInfo
     ) {
-        guard
-            let pixelBuffer = pixelBuffer
-        else {return}
+        guard let pixelBuffer = pixelBuffer else { return }
 
-        // Remove the background
-        DispatchQueue.global(qos: .background).async {
-            if self.sequenceNumber % 10 == 0 {
-                do {
-                    try self.greenscreen.replaceBackground(onPixelBuffer: pixelBuffer)
-                } catch {
-                    log(error)
-                }
+        DispatchQueue.global(qos: .userInteractive).async {
+            if let newMask = try? self.greenscreen.mask(
+                webcamPixelBuffer: pixelBuffer
+            ) {
+                self.currentMask = newMask
             }
         }
 
-        if let greenscreenBuffer = currentGreenscreenBuffer {
-            self.dispatch(
-                pixelBuffer: greenscreenBuffer,
-                toStreamWithTiming: sampleTimingInfo
-            )
-        } else {
-            self.dispatch(
-                pixelBuffer: pixelBuffer,
-                toStreamWithTiming: sampleTimingInfo
-            )
+        guard let mask = currentMask else {
+            dispatch(pixelBuffer: pixelBuffer, toStreamWithTiming: sampleTimingInfo)
+            return
         }
-    }
-}
 
-extension Stream: NeuralGreenscreenDelegate {
-    func didReplaceBackground(onProcessedPixelBuffer pixelBuffer: CVPixelBuffer) {
-        log("Received processed buffer")
-        self.currentGreenscreenBuffer = pixelBuffer
+        let filter = CIFilter(name: "CIBlendWithMask", parameters: [
+            "inputImage": CIImage(cvPixelBuffer: pixelBuffer),
+            "inputBackgroundImage": greenscreen.background,
+            "inputMaskImage": CIImage(cvPixelBuffer: mask),
+        ])
+
+        guard let outputImage = filter?.outputImage else { return }
+
+        let attrs = [
+            kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue,
+            kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue
+        ] as CFDictionary
+        var outputPixelBuffer: CVPixelBuffer?
+        CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            1280,
+            720,
+            kCVPixelFormatType_32BGRA,
+            attrs,
+            &outputPixelBuffer
+        )
+        guard
+            let outputPixelBuffer = outputPixelBuffer
+        else { fatalError("Could not create new output pixel buffer") }
+        context.render(outputImage, to: outputPixelBuffer)
+
+        dispatch(pixelBuffer: outputPixelBuffer, toStreamWithTiming: sampleTimingInfo)
     }
 }
