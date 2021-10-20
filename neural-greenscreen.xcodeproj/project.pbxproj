@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		BE157A22245D71C100481624 /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE157A21245D71C100481624 /* VideoCapture.swift */; };
-		BE8832AC2454424600326232 /* CVPixelBuffer+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */; };
+		BE956A85271EA3C00031F0D2 /* NeuralGreenscreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF7E968271EA10500CA4D01 /* NeuralGreenscreen.swift */; };
+		BEC62C0C271EB0CF00AEE45B /* NeuralGreenscreen.metal in Sources */ = {isa = PBXBuildFile; fileRef = BEC62C0B271EB0CF00AEE45B /* NeuralGreenscreen.metal */; };
+		BEC62C0E271EC2DF00AEE45B /* DeepLabV3.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = BEC62C0D271EC2DF00AEE45B /* DeepLabV3.mlmodel */; };
 		BEF5B53A2453D9CA00E7FC18 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B5392453D9CA00E7FC18 /* Main.swift */; };
 		BEF5B53D2453DFA200E7FC18 /* CoreMediaIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BEF5B53C2453DFA200E7FC18 /* CoreMediaIO.framework */; };
 		BEF5B53F2453E8F500E7FC18 /* PluginInterface.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B53E2453E8F500E7FC18 /* PluginInterface.swift */; };
@@ -18,12 +20,14 @@
 		BEF5B547245403AF00E7FC18 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B546245403AF00E7FC18 /* Device.swift */; };
 		BEF5B54A24540C0500E7FC18 /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B54924540C0500E7FC18 /* Stream.swift */; };
 		BEF5B54D245417B600E7FC18 /* Property.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF5B54C245417B600E7FC18 /* Property.swift */; };
+		BEF7E96A271EA16400CA4D01 /* DeepLabV3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = BEF7E969271EA16400CA4D01 /* DeepLabV3Int8LUT.mlmodel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		BE143C202461C1BF0058B460 /* neural-greenscreen-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "neural-greenscreen-Bridging-Header.h"; sourceTree = "<group>"; };
 		BE157A21245D71C100481624 /* VideoCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCapture.swift; sourceTree = "<group>"; };
-		BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CVPixelBuffer+Tools.swift"; sourceTree = "<group>"; };
+		BEC62C0B271EB0CF00AEE45B /* NeuralGreenscreen.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = NeuralGreenscreen.metal; sourceTree = "<group>"; };
+		BEC62C0D271EC2DF00AEE45B /* DeepLabV3.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3.mlmodel; sourceTree = "<group>"; };
 		BEF5B52F2453D9B300E7FC18 /* neuralGreenscreenMain.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = neuralGreenscreenMain.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		BEF5B5322453D9B300E7FC18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BEF5B5392453D9CA00E7FC18 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Main.swift; sourceTree = "<group>"; };
@@ -35,6 +39,8 @@
 		BEF5B546245403AF00E7FC18 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		BEF5B54924540C0500E7FC18 /* Stream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
 		BEF5B54C245417B600E7FC18 /* Property.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Property.swift; sourceTree = "<group>"; };
+		BEF7E968271EA10500CA4D01 /* NeuralGreenscreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralGreenscreen.swift; sourceTree = "<group>"; };
+		BEF7E969271EA16400CA4D01 /* DeepLabV3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3Int8LUT.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,14 +62,6 @@
 				BE157A29245D81F200481624 /* Virtual Camera */,
 			);
 			path = Interface;
-			sourceTree = "<group>";
-		};
-		BE157A27245D81A800481624 /* Graphics */ = {
-			isa = PBXGroup;
-			children = (
-				BE8832AB2454424600326232 /* CVPixelBuffer+Tools.swift */,
-			);
-			path = Graphics;
 			sourceTree = "<group>";
 		};
 		BE157A28245D81DC00481624 /* Capture */ = {
@@ -111,7 +109,10 @@
 			children = (
 				BE143C202461C1BF0058B460 /* neural-greenscreen-Bridging-Header.h */,
 				BEF5B5322453D9B300E7FC18 /* Info.plist */,
-				BE157A27245D81A800481624 /* Graphics */,
+				BEC62C0D271EC2DF00AEE45B /* DeepLabV3.mlmodel */,
+				BEF7E969271EA16400CA4D01 /* DeepLabV3Int8LUT.mlmodel */,
+				BEF7E968271EA10500CA4D01 /* NeuralGreenscreen.swift */,
+				BEC62C0B271EB0CF00AEE45B /* NeuralGreenscreen.metal */,
 				BE157A26245D817400481624 /* Interface */,
 			);
 			path = "neural-greenscreen";
@@ -151,7 +152,7 @@
 		BEF5B5272453D9B300E7FC18 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1140;
+				LastUpgradeCheck = 1250;
 				ORGANIZATIONNAME = com.seanchas116;
 				TargetAttributes = {
 					BEF5B52E2453D9B300E7FC18 = {
@@ -193,13 +194,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEF7E96A271EA16400CA4D01 /* DeepLabV3Int8LUT.mlmodel in Sources */,
+				BE956A85271EA3C00031F0D2 /* NeuralGreenscreen.swift in Sources */,
 				BEF5B53F2453E8F500E7FC18 /* PluginInterface.swift in Sources */,
 				BEF5B5412453F50000E7FC18 /* Object.swift in Sources */,
 				BEF5B5452454003B00E7FC18 /* Log.swift in Sources */,
-				BE8832AC2454424600326232 /* CVPixelBuffer+Tools.swift in Sources */,
 				BE157A22245D71C100481624 /* VideoCapture.swift in Sources */,
+				BEC62C0E271EC2DF00AEE45B /* DeepLabV3.mlmodel in Sources */,
 				BEF5B547245403AF00E7FC18 /* Device.swift in Sources */,
 				BEF5B5432453FE5D00E7FC18 /* Plugin.swift in Sources */,
+				BEC62C0C271EB0CF00AEE45B /* NeuralGreenscreen.metal in Sources */,
 				BEF5B53A2453D9CA00E7FC18 /* Main.swift in Sources */,
 				BEF5B54D245417B600E7FC18 /* Property.swift in Sources */,
 				BEF5B54A24540C0500E7FC18 /* Stream.swift in Sources */,
@@ -235,6 +239,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -293,6 +298,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -315,6 +321,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
 		};
@@ -335,6 +342,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.philippmatthes.neural-greenscreen";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "neural-greenscreen/neural-greenscreen-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -360,6 +368,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.philippmatthes.neural-greenscreen";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "neural-greenscreen/neural-greenscreen-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

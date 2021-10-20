@@ -25,7 +25,7 @@
 
 import Foundation
 
-protocol Object: class {
+protocol Object: AnyObject {
     var objectID: CMIOObjectID { get }
     var properties: [Int: Property] { get }
 }
