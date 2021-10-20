@@ -2,7 +2,7 @@
 
 Realtime background removal with neural networks on mac os, providing a virtual camera, which can be accessed by third party applications.
 
-![Demo](demo.png)
+![Demo](example.png)
 
 Based on [seanchas116/SimpleDALPlugin](https://github.com/seanchas116/SimpleDALPlugin) and [johnboiles/coremediaio-dal-minimal-example](https://github.com/johnboiles/coremediaio-dal-minimal-example).
 
