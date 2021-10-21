@@ -24,6 +24,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
+/// Create a mask image for the person in an image, using a generated segmentation mask.
 kernel void mask(
     texture2d<float, access::write> outputTexture [[texture(0)]],
     device int* segmentationMask [[buffer(0)]],

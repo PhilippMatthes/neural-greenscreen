@@ -42,6 +42,16 @@ class Stream: NSObject, Object {
     let context = CIContext()
     let greenscreen = NeuralGreenscreen()
     var currentMask: CVPixelBuffer?
+
+    lazy var background: CIImage = {
+        guard
+            let url = Bundle(for: Self.self)
+                .url(forResource: "background", withExtension: "png"),
+            let data = try? Data(contentsOf: url),
+            let image = CIImage(data: data)
+        else { fatalError("Background image could not be loaded") }
+        return image
+    }()
     
     private var sequenceNumber: UInt64 = 0
     private var queueAlteredProc: CMIODeviceStreamQueueAlteredProc?
@@ -189,7 +199,7 @@ extension Stream: VideoCaptureDelegate {
 
         let filter = CIFilter(name: "CIBlendWithMask", parameters: [
             "inputImage": CIImage(cvPixelBuffer: pixelBuffer),
-            "inputBackgroundImage": greenscreen.background,
+            "inputBackgroundImage": background,
             "inputMaskImage": CIImage(cvPixelBuffer: mask),
         ])
 
