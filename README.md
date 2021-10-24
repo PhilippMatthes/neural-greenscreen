@@ -1,6 +1,8 @@
 # Neural Greenscreen
 
-Realtime background removal with neural networks on mac os, providing a virtual camera, which can be accessed by third party applications.
+![Architecture](neural-greenscreen.png)
+
+Realtime background removal with neural networks on mac os, providing a virtual camera, which can be accessed by third party applications. ➡️ [Read the Medium article](https://philippmatthes.medium.com/how-to-create-a-system-wide-plugin-for-mac-os-which-removes-the-background-of-the-webcam-2cb88a94dc7b)
 
 ![Demo](preview.png)
 
